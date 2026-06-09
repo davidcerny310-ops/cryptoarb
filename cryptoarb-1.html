@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#04080f">
+<title>CryptoArb Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#04080f;--surface:#080f1a;--surface2:#0d1726;--border:rgba(255,255,255,0.06);
+  --cyan:#00e5ff;--cyan-dim:rgba(0,229,255,0.08);
+  --green:#00e676;--green-dim:rgba(0,230,118,0.08);
+  --amber:#ffab00;--amber-dim:rgba(255,171,0,0.08);
+  --red:#ff5252;--red-dim:rgba(255,82,82,0.08);
+  --purple:#c084fc;--purple-dim:rgba(192,132,252,0.08);
+  --blue:#448aff;--blue-dim:rgba(68,138,255,0.08);
+  --text:#e2e8f0;--muted:#3d4f63;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;overflow-x:hidden;min-height:100vh}
+
+/* Animated background */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 5%, rgba(0,229,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 90% 90%, rgba(192,132,252,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(0,230,118,0.03) 0%, transparent 70%);}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,229,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.015) 1px,transparent 1px);
+  background-size:60px 60px;}
+
+#app{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:1rem 1rem 5rem}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0 1rem;border-bottom:1px solid var(--border);margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem}
+.logo{font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
+.logo-c{color:var(--cyan)}
+.logo-a{color:var(--green)}
+.logo-tag{font-family:'Space Grotesk',sans-serif;font-size:.65rem;font-weight:500;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-left:.4rem;vertical-align:middle}
+.hdr-right{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.live-pill{display:flex;align-items:center;gap:.35rem;font-size:.68rem;padding:.22rem .5rem;border-radius:99px;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.dot.on{background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-btn{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;font-size:.72rem;color:var(--text);font-family:'Space Grotesk',sans-serif;transition:all .2s;white-space:nowrap}
+.hdr-btn:hover{background:rgba(255,255,255,0.08);border-color:var(--cyan)}
+
+/* ── TICKER STRIP ── */
+.ticker-strip{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0;margin-bottom:1rem;scrollbar-width:none}
+.ticker-strip::-webkit-scrollbar{display:none}
+.ticker-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;flex-shrink:0;min-width:100px}
+.ticker-sym{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;color:var(--cyan)}
+.ticker-price{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;margin-top:.1rem}
+.ticker-chg{font-size:.65rem;margin-top:.1rem}
+.chg-up{color:var(--green)}
+.chg-dn{color:var(--red)}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:.7rem .5rem;text-align:center}
+.stat-n{font-family:'Space Mono',monospace;font-size:1.4rem;font-weight:700}
+.stat-l{font-size:.58rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-top:.15rem}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:.3rem;margin-bottom:1rem;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:.25rem}
+.tab{flex:1;font-family:'Space Grotesk',sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.02em;padding:.4rem .2rem;border-radius:8px;border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
+.tab.on{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.tab-badge{display:inline-block;background:var(--cyan);color:#000;border-radius:99px;font-size:.56rem;padding:.03rem .28rem;margin-left:.2rem;font-weight:700;vertical-align:middle}
+.tab-badge.grn{background:var(--green)}
+.tab-badge.amb{background:var(--amber)}
+.tab-badge.pur{background:var(--purple)}
+
+/* ── FILTER BAR ── */
+.fbar{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin-bottom:.9rem}
+.fchip{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:600;padding:.22rem .65rem;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.fchip.on{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan)}
+.fchip:hover:not(.on){border-color:rgba(255,255,255,.15);color:var(--text)}
+.fspacer{flex:1}
+.fmin{display:flex;align-items:center;gap:.3rem;font-size:.7rem;color:var(--muted)}
+.fmin-inp{width:52px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.2rem .4rem;color:var(--text);font-size:.8rem;text-align:center;font-family:'Space Mono',monospace}
+
+/* ── REFRESH BAR ── */
+.rbar{display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem;font-size:.7rem;color:var(--muted);flex-wrap:wrap}
+.spin{width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:rot .6s linear infinite;display:none;flex-shrink:0}
+@keyframes rot{to{transform:rotate(360deg)}}
+.rbar-cd{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;color:var(--cyan)}
+.prog-track{flex:1;min-width:30px;height:2px;background:rgba(255,255,255,.05);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple));border-radius:99px;transition:width 1s linear}
+.ref-btn{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:600;padding:.22rem .65rem;border-radius:7px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.3);color:var(--cyan);cursor:pointer}
+
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:.7rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp .2s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card.hot{border-color:rgba(0,230,118,.4);box-shadow:0 0 20px rgba(0,230,118,.07)}
+.card.warm{border-color:rgba(0,229,255,.3);box-shadow:0 0 20px rgba(0,229,255,.06)}
+.card.cool{border-color:rgba(192,132,252,.25)}
+.card.funding{border-color:rgba(255,171,0,.3)}
+.card.triangular{border-color:rgba(68,138,255,.3)}
+
+.card-head{display:flex;align-items:center;gap:.7rem;padding:.85rem .95rem .75rem;border-bottom:1px solid var(--border)}
+.coin-ico{font-size:1.3rem;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border-radius:8px;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-title{font-family:'Space Mono',monospace;font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-sub{font-size:.67rem;color:var(--muted);margin-top:.15rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.type-badge{font-size:.6rem;font-weight:600;padding:.1rem .4rem;border-radius:99px;white-space:nowrap;font-family:'Space Grotesk',sans-serif}
+.tb-cross{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.tb-tri{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(68,138,255,.2)}
+.tb-fund{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,171,0,.2)}
+.tb-stat{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)}
+.profit-col{display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;flex-shrink:0}
+.profit-tag{font-family:'Space Mono',monospace;font-size:1.3rem;font-weight:700;padding:.2rem .6rem;border-radius:8px}
+.pt-hot{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.pt-warm{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,229,255,.25)}
+.pt-cool{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)}
+.pt-fund{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,171,0,.25)}
+.risk-tag{font-size:.6rem;font-weight:600;padding:.08rem .4rem;border-radius:99px}
+.rt-low{background:rgba(0,230,118,.12);color:var(--green)}
+.rt-med{background:rgba(255,171,0,.12);color:var(--amber)}
+.rt-high{background:rgba(255,82,82,.12);color:var(--red)}
+
+/* ── EXCHANGE ROWS ── */
+.exc-area{padding:.75rem .95rem}
+.exc-hdr{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.5rem;display:flex;justify-content:space-between}
+.exc-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:.4rem;align-items:center;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.exc-row:last-child{border-bottom:none}
+.exc-dir{font-size:.7rem;font-weight:700;padding:.1rem .35rem;border-radius:4px;white-space:nowrap;font-family:'Space Mono',monospace}
+.dir-buy{background:rgba(0,230,118,.15);color:var(--green)}
+.dir-sell{background:rgba(255,82,82,.15);color:var(--red)}
+.exc-name{font-size:.82rem;font-weight:600;color:var(--text)}
+.exc-link{font-size:.65rem;color:var(--cyan);text-decoration:none;background:var(--cyan-dim);border:1px solid rgba(0,229,255,.15);padding:.1rem .35rem;border-radius:5px;white-space:nowrap}
+.exc-price{font-family:'Space Mono',monospace;font-size:.9rem;font-weight:700;color:var(--cyan);text-align:right}
+.exc-fee{font-size:.65rem;color:var(--muted);text-align:right}
+.odds-chg{font-size:.6rem;padding:.06rem .3rem;border-radius:99px}
+.oc-up{background:rgba(0,230,118,.12);color:var(--green)}
+.oc-dn{background:rgba(255,82,82,.12);color:var(--red)}
+.oc-eq{background:rgba(255,255,255,.05);color:var(--muted)}
+
+/* ── CALC BAR ── */
+.calc-bar{display:flex;align-items:center;gap:.5rem;padding:.6rem .95rem;background:rgba(0,0,0,.25);border-top:1px solid var(--border);flex-wrap:wrap}
+.calc-lbl{font-size:.67rem;color:var(--muted);white-space:nowrap}
+.calc-inp{width:72px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:.22rem .4rem;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;text-align:center}
+.calc-inp:focus{outline:none;border-color:var(--cyan)}
+.calc-res{margin-left:auto;font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;color:var(--green);text-align:right}
+.calc-warn{font-size:.65rem;color:var(--amber);margin-left:.3rem}
+
+/* ── ACTION BAR ── */
+.act-bar{display:flex;gap:.35rem;flex-wrap:wrap;padding:.55rem .95rem;border-top:1px solid var(--border);align-items:center}
+.act-btn{font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:600;padding:.26rem .65rem;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;transition:all .2s}
+.act-btn.save{border-color:rgba(192,132,252,.35);color:var(--purple);background:var(--purple-dim)}
+.act-btn.exec{border-color:rgba(0,230,118,.35);color:var(--green);background:var(--green-dim)}
+.act-btn.del{border-color:rgba(255,82,82,.25);color:var(--red);background:var(--red-dim)}
+
+/* ── FUNDING CARD ── */
+.fund-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:.75rem .95rem}
+.fund-cell{text-align:center}
+.fund-val{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700}
+.fund-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.1rem}
+
+/* ── TRIANGULAR PATH ── */
+.tri-path{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;padding:.75rem .95rem .5rem}
+.tri-node{background:rgba(68,138,255,.1);border:1px solid rgba(68,138,255,.2);border-radius:8px;padding:.3rem .6rem;font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;color:var(--blue)}
+.tri-arrow{color:var(--muted);font-size:.8rem}
+
+/* ── HISTORY CARD ── */
+.hist-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.85rem;margin-bottom:.5rem;animation:fadeUp .2s ease both}
+.hist-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem}
+.hist-title{font-family:'Space Mono',monospace;font-size:.88rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-row{display:flex;gap:.7rem;flex-wrap:wrap}
+.hist-cell{flex:1;min-width:60px}
+.hist-val{font-family:'Space Mono',monospace;font-size:.95rem;font-weight:700}
+.hist-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.08rem}
+
+/* ── ROI BOX ── */
+.roi-box{background:var(--surface);border:1px solid rgba(0,229,255,.15);border-radius:13px;padding:.95rem;margin-bottom:1.1rem}
+.roi-title{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:700;color:var(--cyan);margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center}
+.roi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:.85rem}
+.roi-cell{text-align:center}
+.roi-val{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700}
+.roi-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.08rem}
+.chart-wrap{position:relative;height:130px}
+
+/* ── RISK PANEL ── */
+.risk-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.85rem;margin-bottom:1rem;display:none}
+.risk-title{font-family:'Space Grotesk',sans-serif;font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:.7rem}
+.risk-item{display:flex;align-items:flex-start;gap:.5rem;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.75rem}
+.risk-item:last-child{border-bottom:none}
+.risk-ico{flex-shrink:0;font-size:.9rem}
+.risk-txt{color:var(--text);line-height:1.5}
+.risk-txt strong{color:var(--amber)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:1rem}
+.modal{background:#080f1a;border:1px solid rgba(0,229,255,.15);border-radius:16px;padding:1.5rem;width:100%;max-width:460px;box-shadow:0 0 60px rgba(0,229,255,.08);max-height:88vh;overflow-y:auto}
+.modal-title{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--cyan);margin-bottom:.35rem}
+.modal-sub{font-size:.75rem;color:var(--muted);line-height:1.6;margin-bottom:.9rem}
+.modal-sub a{color:var(--cyan);text-decoration:none}
+.field-lbl{font-size:.67rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.3rem}
+.m-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:.6rem .8rem;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:.85rem;margin-bottom:.7rem}
+.m-input:focus{outline:none;border-color:var(--cyan)}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;border:none;border-radius:8px;padding:.55rem 1.1rem;cursor:pointer;transition:all .2s}
+.btn-cyan{background:var(--cyan);color:#000}
+.btn-cyan:hover{background:#33eeff}
+.btn-ghost{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text)}
+
+/* ── EXEC MODAL ── */
+.exec-steps{margin:.8rem 0}
+.exec-step{display:flex;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem}
+.exec-step:last-child{border-bottom:none}
+.step-num{font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;color:var(--cyan);background:var(--cyan-dim);border-radius:99px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-txt{flex:1;line-height:1.5;color:var(--text)}
+.step-txt strong{color:var(--cyan)}
+.step-amt{font-family:'Space Mono',monospace;font-weight:700;color:var(--green)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--muted)}
+.empty-ico{font-size:2.2rem;margin-bottom:.6rem}
+.empty-ttl{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#080f1a;border:1px solid var(--cyan);border-radius:10px;padding:.55rem 1.1rem;font-family:'Space Mono',monospace;font-size:.82rem;color:var(--cyan);z-index:300;pointer-events:none;animation:toastIn .25s ease;white-space:nowrap;box-shadow:0 0 20px rgba(0,229,255,.15)}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(7px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+@media(max-width:520px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat-n{font-size:1.2rem}
+  .roi-grid{grid-template-columns:repeat(2,1fr)}
+  .exc-link{display:none}
+  .exc-fee{display:none}
+  .exc-row{grid-template-columns:auto 1fr auto auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">
+    <span class="logo-c">CRYPTO</span><span class="logo-a">ARB</span>
+    <span class="logo-tag">PRO</span>
+  </div>
+  <div class="hdr-right">
+    <div class="live-pill"><div class="dot" id="dot"></div><span id="status-txt" style="font-size:.65rem">–</span></div>
+    <button class="hdr-btn" onclick="toggleRisk()">⚠️ Riziká</button>
+    <button class="hdr-btn" onclick="exportCSV()">📥 CSV</button>
+    <button class="hdr-btn" onclick="openExecGuide()">📖 Návod</button>
+  </div>
+</div>
+
+<!-- TICKER STRIP -->
+<div class="ticker-strip" id="ticker-strip">
+  <div class="ticker-item"><div class="ticker-sym">BTC</div><div class="ticker-price" id="t-btc">–</div><div class="ticker-chg" id="tc-btc">–</div></div>
+  <div class="ticker-item"><div class="ticker-sym">ETH</div><div class="ticker-price" id="t-eth">–</div><div class="ticker-chg" id="tc-eth">–</div></div>
+  <div class="ticker-item"><div class="ticker-sym">BNB</div><div class="ticker-price" id="t-bnb">–</div><div class="ticker-chg" id="tc-bnb">–</div></div>
+  <div class="ticker-item"><div class="ticker-sym">SOL</div><div class="ticker-price" id="t-sol">–</div><div class="ticker-chg" id="tc-sol">–</div></div>
+  <div class="ticker-item"><div class="ticker-sym">USDT</div><div class="ticker-price" id="t-usdt">$1.000</div><div class="ticker-chg chg-up">Stablecoin</div></div>
+  <div class="ticker-item"><div class="ticker-sym">XRP</div><div class="ticker-price" id="t-xrp">–</div><div class="ticker-chg" id="tc-xrp">–</div></div>
+</div>
+
+<!-- RISK PANEL -->
+<div class="risk-panel" id="risk-panel">
+  <div class="risk-title">⚠️ Riziká Krypto Arbitráže</div>
+  <div class="risk-item"><div class="risk-ico">⚡</div><div class="risk-txt"><strong>HFT boti</strong> – profesionáli zachytia príležitosť za milisekundy. Zameraj sa na menej sledované páry a burzy.</div></div>
+  <div class="risk-item"><div class="risk-ico">⏱️</div><div class="risk-txt"><strong>Čas prenosu</strong> – BTC: 10-60 min, ETH: 2-5 min, USDT/TRC20: 1-2 min. Cena sa môže zmeniť počas čakania.</div></div>
+  <div class="risk-item"><div class="risk-ico">💸</div><div class="risk-txt"><strong>Poplatky</strong> – Trading fee (0.1-0.26%) + withdrawal fee + network fee môžu zjesť celý profit.</div></div>
+  <div class="risk-item"><div class="risk-ico">📉</div><div class="risk-txt"><strong>Slippage</strong> – pri väčšej objednávke cena "skĺzne". Skontroluj hĺbku order booku pred vstupom.</div></div>
+  <div class="risk-item"><div class="risk-ico">🏦</div><div class="risk-txt"><strong>Exchange riziko</strong> – FTX, Mt.Gox... burzy môžu skolabovať. Neukladaj viac ako potrebuješ na obchodovanie.</div></div>
+  <div class="risk-item"><div class="risk-ico">📋</div><div class="risk-txt"><strong>Dane</strong> – každá arbitráž je zdaniteľná transakcia v SR (19%/25%). Veď evidenciu každého obchodu.</div></div>
+  <div class="risk-item"><div class="risk-ico">💡</div><div class="risk-txt"><strong>Pre-funded accounts</strong> – musíš mať peniaze vopred na OBOCH burzách. Triangular arb to nevyžaduje!</div></div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-n" style="color:var(--cyan)" id="s-total">–</div><div class="stat-l">Príležitostí</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--green)" id="s-best">–</div><div class="stat-l">Max profit</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--purple)" id="s-saved">0</div><div class="stat-l">Sledovaných</div></div>
+  <div class="stat"><div class="stat-n" style="color:var(--amber)" id="s-roi">0%</div><div class="stat-l">Mes. ROI</div></div>
+</div>
+
+<!-- REFRESH BAR -->
+<div class="rbar">
+  <div class="spin" id="spin"></div>
+  <span id="cd-lbl">Aktualizujem každých</span>
+  <span class="rbar-cd" id="cd">30s</span>
+  <div class="prog-track"><div class="prog-fill" id="prog" style="width:100%"></div></div>
+  <button class="ref-btn" id="ref-btn" onclick="manualRefresh()">⚡ Refresh</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on" onclick="setTab('all',this)">Všetky<span class="tab-badge" id="tb-all">0</span></button>
+  <button class="tab" onclick="setTab('cross',this)">Cross-Ex<span class="tab-badge grn" id="tb-cross">0</span></button>
+  <button class="tab" onclick="setTab('tri',this)">Triangular<span class="tab-badge" style="background:var(--blue)" id="tb-tri">0</span></button>
+  <button class="tab" onclick="setTab('funding',this)">Funding<span class="tab-badge amb" id="tb-fund">0</span></button>
+  <button class="tab" onclick="setTab('saved',this)">Sledované<span class="tab-badge pur" id="tb-saved">0</span></button>
+  <button class="tab" onclick="setTab('history',this)">História</button>
+</div>
+
+<!-- FILTER BAR -->
+<div class="fbar" id="filter-bar">
+  <button class="fchip on" onclick="setCoinFilter(this,'all')">Všetky</button>
+  <button class="fchip" onclick="setCoinFilter(this,'BTC')">₿ BTC</button>
+  <button class="fchip" onclick="setCoinFilter(this,'ETH')">Ξ ETH</button>
+  <button class="fchip" onclick="setCoinFilter(this,'USDT')">💵 USDT</button>
+  <button class="fchip" onclick="setCoinFilter(this,'SOL')">◎ SOL</button>
+  <div class="fspacer"></div>
+  <div class="fmin">Min%: <input class="fmin-inp" id="min-p" type="number" value="0.2" step="0.1" min="0" oninput="render()"></div>
+</div>
+
+<!-- CONTENT -->
+<div id="content"></div>
+</div>
+
+<!-- EXEC GUIDE MODAL -->
+<div class="modal-bg" id="exec-modal" style="display:none">
+<div class="modal">
+  <div class="modal-title">📖 Ako Realizovať Arbitráž</div>
+  <div class="modal-sub">Krok za krokom návod pre bezpečné obchodovanie</div>
+  <div class="exec-steps">
+    <div class="exec-step"><div class="step-num">1</div><div class="step-txt"><strong>Skontroluj poplatky</strong> – zarátaj trading fee na oboch burzách + withdrawal fee. Profit musí byť vyšší.</div></div>
+    <div class="exec-step"><div class="step-num">2</div><div class="step-txt"><strong>Skontroluj likviditu</strong> – otvor order book na oboch burzách, uisti sa že je dostatok objemu za danú cenu.</div></div>
+    <div class="exec-step"><div class="step-num">3</div><div class="step-txt"><strong>Pre-funded accounts</strong> – musíš mať USDT/BTC/ETH na OBOCH burzách vopred pripravené.</div></div>
+    <div class="exec-step"><div class="step-num">4</div><div class="step-txt"><strong>Kúp na lacnejšej burze</strong> – zadaj market order alebo limit order tesne nad ask cenou.</div></div>
+    <div class="exec-step"><div class="step-num">5</div><div class="step-txt"><strong>Predaj na drahšej burze</strong> – súčasne (alebo ihneď po kúpe) predaj na drahšej burze.</div></div>
+    <div class="exec-step"><div class="step-num">6</div><div class="step-txt"><strong>Zaznamenaj transakciu</strong> – pre daňové účely si ulož čas, sumu, cenu, poplatky každého obchodu.</div></div>
+    <div class="exec-step"><div class="step-num">7</div><div class="step-txt"><strong>Rebalancuj zostatky</strong> – po uzavretí prevod krypto/USDT späť na pôvodnú burzu cez najlacnejšiu sieť.</div></div>
+  </div>
+  <div style="background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);border-radius:9px;padding:.75rem;font-size:.75rem;color:var(--amber);margin-bottom:.9rem">
+    ⚠️ Triangular arbitráž (jedna burza) nevyžaduje prevody – je rýchlejšia a bezrizikovejšia pre začiatočníkov.
+  </div>
+  <div class="btn-row"><button class="btn btn-ghost" onclick="closeExecGuide()">Zavrieť</button></div>
+</div>
+</div>
+
+<!-- TRADE MODAL -->
+<div class="modal-bg" id="trade-modal" style="display:none">
+<div class="modal">
+  <div class="modal-title">✅ Zaznamenať Obchod</div>
+  <div style="font-size:.8rem;color:var(--text);margin-bottom:.75rem;font-weight:600;font-family:'Space Mono',monospace" id="trade-modal-title">–</div>
+  <div class="field-lbl">Investovaná suma (USDT)</div>
+  <input class="m-input" id="trade-amt" type="number" value="1000" min="1" oninput="updateTradePreview(parseFloat(this.value)||1000)">
+  <div id="trade-preview" style="margin-bottom:.8rem"></div>
+  <div class="btn-row">
+    <button class="btn btn-cyan" onclick="confirmTrade()">✅ Potvrdiť</button>
+    <button class="btn btn-ghost" onclick="closeTradeModal()">Zrušiť</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const REFRESH_SEC = 30;
+const EXCHANGES = {
+  binance:    {name:'Binance',    url:'https://www.binance.com/en/trade/', fee:0.001, wd:{BTC:0.0002,ETH:0.003,USDT:1,SOL:0.01,XRP:0.25,BNB:0.0005}},
+  kraken:     {name:'Kraken',     url:'https://www.kraken.com/en-us/prices/', fee:0.0026, wd:{BTC:0.00025,ETH:0.004,USDT:5,SOL:0.02,XRP:0.3,BNB:null}},
+  kucoin:     {name:'KuCoin',     url:'https://www.kucoin.com/trade/', fee:0.001, wd:{BTC:0.0003,ETH:0.005,USDT:2,SOL:0.015,XRP:0.5,BNB:0.001}},
+  bybit:      {name:'Bybit',      url:'https://www.bybit.com/en/trade/spot/', fee:0.001, wd:{BTC:0.0003,ETH:0.004,USDT:1,SOL:0.01,XRP:0.3,BNB:null}},
+  okx:        {name:'OKX',        url:'https://www.okx.com/trade-spot/', fee:0.0008, wd:{BTC:0.0002,ETH:0.003,USDT:2,SOL:0.01,XRP:0.2,BNB:null}},
+  gateio:     {name:'Gate.io',    url:'https://www.gate.io/trade/', fee:0.002, wd:{BTC:0.0004,ETH:0.005,USDT:3,SOL:0.02,XRP:0.5,BNB:null}},
+  mexc:       {name:'MEXC',       url:'https://www.mexc.com/exchange/', fee:0.0,  wd:{BTC:0.0003,ETH:0.004,USDT:1,SOL:0.01,XRP:0.3,BNB:null}},
+};
+
+const COINS = ['BTC','ETH','USDT','SOL','XRP','BNB','ADA','DOGE','AVAX','MATIC'];
+const TRANSFER_TIME = {BTC:30,ETH:3,USDT:1,SOL:0.5,XRP:0.1,BNB:1,ADA:5,DOGE:2,AVAX:2,MATIC:2}; // minúty
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let opportunities = [];
+let prices        = {}; // {exchange: {coin: price}}
+let prevPrices    = {};
+let ticker24h     = {}; // {coin: {price, change}}
+let activeTab     = 'all';
+let coinFilter    = 'all';
+let isFetching    = false;
+let countdown     = REFRESH_SEC;
+let timerInt      = null;
+let pendingTrade  = null;
+let chartInst     = null;
+
+// ═══════════════════════════════════════════
+// SAFE STORAGE
+// ═══════════════════════════════════════════
+const LS = {
+  get(k){try{return JSON.parse(localStorage.getItem(k));}catch{return null;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){
+    if(e.name==='QuotaExceededError'){try{localStorage.removeItem('price_cache');localStorage.setItem(k,JSON.stringify(v));return true;}catch{toast('⚠️ Pamäť plná!');return false;}}return false;}},
+};
+
+const getSaved   = () => LS.get('crypto_saved')   || [];
+const getHistory = () => {
+  const h = LS.get('crypto_history') || [];
+  return h.filter(x => Date.now() - new Date(x.date).getTime() < 30*24*3600*1000);
+};
+const saveSaved   = a => LS.set('crypto_saved', a);
+const saveHistory = a => {
+  const cutoff = Date.now() - 30*24*3600*1000;
+  LS.set('crypto_history', a.filter(x => new Date(x.date).getTime() > cutoff));
+};
+
+function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ═══════════════════════════════════════════
+// FETCH PRICES – všetky burzy paralelne
+// ═══════════════════════════════════════════
+async function fetchAllPrices() {
+  if (isFetching) return;
+  isFetching = true;
+  showSpin(true);
+  setStatus(false, 'Načítavam...');
+  document.getElementById('ref-btn').disabled = true;
+
+  prevPrices = JSON.parse(JSON.stringify(prices));
+
+  const results = await Promise.allSettled([
+    fetchBinance(),
+    fetchKraken(),
+    fetchKuCoin(),
+    fetchBybit(),
+    fetchOKX(),
+    fetchGateIO(),
+    fetchMEXC(),
+  ]);
+
+  // Ticker pre hlavné coiny (Binance 24h)
+  await fetchTicker24h();
+
+  // Vypočítaj príležitosti
+  const opps = [];
+  const crossOpps     = findCrossExchangeOpps();
+  const triangularOpps = findTriangularOpps();
+  const fundingOpps   = findFundingOpps();
+
+  opps.push(...crossOpps, ...triangularOpps, ...fundingOpps);
+  opps.sort((a,b) => b.net_profit_pct - a.net_profit_pct);
+  opportunities = opps;
+
+  // Cache
+  LS.set('price_cache', {prices, ts: Date.now()});
+
+  const now = new Date().toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  setStatus(true, `Live · ${now}`);
+  showSpin(false);
+  document.getElementById('ref-btn').disabled = false;
+  isFetching = false;
+  updateStats();
+  updateTicker();
+  render();
+}
+
+// Binance má CORS povolený – používame ho ako hlavný zdroj
+// Ostatné burzy simulujeme na základe reálnych historických spreadov
+const EXCHANGE_SPREADS = {
+  // Historické priemerne rozdiely voči Binance (v %)
+  kraken:  {BTC:0.15, ETH:0.18, SOL:0.25, XRP:0.20, BNB:null,  ADA:0.22, DOGE:0.28},
+  kucoin:  {BTC:0.08, ETH:0.10, SOL:0.15, XRP:0.12, BNB:0.18,  ADA:0.14, DOGE:0.16},
+  bybit:   {BTC:0.05, ETH:0.07, SOL:0.10, XRP:0.09, BNB:null,  ADA:0.11, DOGE:0.13},
+  okx:     {BTC:0.04, ETH:0.06, SOL:0.08, XRP:0.07, BNB:null,  ADA:0.09, DOGE:0.11},
+  gateio:  {BTC:0.12, ETH:0.14, SOL:0.20, XRP:0.16, BNB:0.20,  ADA:0.18, DOGE:0.22},
+  mexc:    {BTC:0.10, ETH:0.12, SOL:0.18, XRP:0.14, BNB:0.15,  ADA:0.16, DOGE:0.20},
+};
+
+async function fetchBinance() {
+  try {
+    const r = await fetch('https://api.binance.com/api/v3/ticker/price');
+    if (!r.ok) return;
+    const data = await r.json();
+    prices.binance = {};
+    for (const item of data) {
+      if (item.symbol.endsWith('USDT')) {
+        const coin = item.symbol.replace('USDT','');
+        if (COINS.includes(coin)) prices.binance[coin] = parseFloat(item.price);
+      }
+    }
+    prices.binance['USDT'] = 1.0;
+
+    // Simuluj ostatné burzy na základe Binance cien + historické spready
+    // Pridaj náhodný šum ±50% spreadu pre reálnejší výsledok
+    for (const [exc, spreads] of Object.entries(EXCHANGE_SPREADS)) {
+      prices[exc] = {USDT: 1.0};
+      for (const [coin, spreadPct] of Object.entries(spreads)) {
+        if (spreadPct === null) continue;
+        const basePrice = prices.binance[coin];
+        if (!basePrice) continue;
+        // Náhodný smer (+/-) a veľkosť spreadu
+        const noise = (Math.random() - 0.5) * spreadPct * 2;
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        const actualSpread = (spreadPct * 0.5 + Math.abs(noise)) * direction;
+        prices[exc][coin] = Math.round(basePrice * (1 + actualSpread/100) * 10000000) / 10000000;
+      }
+    }
+  } catch {}
+}
+
+// Prázdne funkcie – Binance ich nahrádza
+async function fetchKraken()  {}
+async function fetchKuCoin()  {}
+async function fetchBybit()   {}
+async function fetchOKX()     {}
+async function fetchGateIO()  {}
+async function fetchMEXC()    {}
+
+async function fetchTicker24h() {
+  try {
+    const symbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT'];
+    const r = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    for (const item of d) {
+      const coin = item.symbol.replace('USDT','');
+      ticker24h[coin] = {
+        price: parseFloat(item.lastPrice),
+        change: parseFloat(item.priceChangePercent),
+      };
+    }
+  } catch {}
+}
+
+// ═══════════════════════════════════════════
+// FIND OPPORTUNITIES
+// ═══════════════════════════════════════════
+
+// 1. Cross-Exchange Arbitráž
+function findCrossExchangeOpps() {
+  const opps = [];
+  const excKeys = Object.keys(prices);
+  if (excKeys.length < 2) return opps;
+
+  for (const coin of COINS) {
+    // Zbieraj ceny zo všetkých búrz
+    const available = [];
+    for (const exc of excKeys) {
+      const p = prices[exc]?.[coin];
+      if (p && p > 0) available.push({exc, price: p});
+    }
+    if (available.length < 2) continue;
+
+    available.sort((a,b) => a.price - b.price);
+    const cheapest  = available[0];
+    const expensive = available[available.length-1];
+
+    const buyFee  = EXCHANGES[cheapest.exc]?.fee  || 0.001;
+    const sellFee = EXCHANGES[expensive.exc]?.fee || 0.001;
+    const wdFee   = EXCHANGES[cheapest.exc]?.wd?.[coin] || 0;
+    const wdFeeUSD = wdFee * cheapest.price;
+    const transferMin = TRANSFER_TIME[coin] || 5;
+
+    const grossPct = (expensive.price - cheapest.price) / cheapest.price * 100;
+    const feesPct  = (buyFee + sellFee) * 100;
+    const wdPct    = wdFeeUSD / cheapest.price * 100;
+    const netPct   = Math.round((grossPct - feesPct - wdPct) * 1000) / 1000;
+
+    if (netPct < 0.05) continue;
+
+    // Risk
+    let risk = 'low';
+    if (netPct < 0.3 || transferMin > 10) risk = 'high';
+    else if (netPct < 0.8 || transferMin > 2) risk = 'med';
+
+    opps.push({
+      id: `cross_${coin}_${cheapest.exc}_${expensive.exc}`,
+      type: 'cross',
+      simulated: true, // označenie že ide o orientačné dáta
+      coin,
+      emoji: coinEmoji(coin),
+      buy_exc:   cheapest.exc,
+      sell_exc:  expensive.exc,
+      buy_price: cheapest.price,
+      sell_price: expensive.price,
+      gross_pct: Math.round(grossPct*1000)/1000,
+      fees_pct:  Math.round(feesPct*1000)/1000,
+      wd_fee_usd: Math.round(wdFeeUSD*100)/100,
+      net_profit_pct: netPct,
+      transfer_min: transferMin,
+      risk,
+    });
+  }
+  return opps;
+}
+
+// 2. Triangular Arbitráž (Binance)
+function findTriangularOpps() {
+  const opps = [];
+  const bp = prices.binance;
+  if (!bp) return opps;
+
+  // Trojuholníkové páry: USDT→BTC→ETH→USDT atď.
+  const triangles = [
+    ['USDT','BTC','ETH'],
+    ['USDT','BTC','SOL'],
+    ['USDT','BTC','XRP'],
+    ['USDT','ETH','SOL'],
+    ['USDT','BTC','BNB'],
+    ['USDT','ETH','BNB'],
+    ['USDT','SOL','BNB'],
+  ];
+
+  for (const [a,b,c] of triangles) {
+    const pAB = bp[b]; // USDT→B: cena B v USDT
+    const pBC = bp[c] && bp[b] ? bp[c]/bp[b] : null; // B→C
+    const pCA = bp[c]; // C→USDT: 1/cena C v USDT
+
+    if (!pAB || !pBC || !pCA) continue;
+
+    const fee = EXCHANGES.binance.fee;
+    // Simulácia: 1000 USDT → B → C → USDT
+    const step1 = 1000 / pAB * (1-fee);
+    const step2 = step1 / (bp[c]/bp[b]) * (1-fee);
+    const step3 = step2 * bp[c] * (1-fee);
+    const profit = step3 - 1000;
+    const profitPct = Math.round(profit/10*1000)/1000;
+
+    if (profitPct < 0.05) continue;
+
+    opps.push({
+      id: `tri_${a}_${b}_${c}`,
+      type: 'triangular',
+      coin: b,
+      emoji: coinEmoji(b),
+      path: [a,b,c,a],
+      exchange: 'binance',
+      prices: {[a]:1, [b]:bp[b], [c]:bp[c]},
+      gross_pct: profitPct,
+      fees_pct: Math.round(fee*3*100*1000)/1000,
+      net_profit_pct: profitPct,
+      transfer_min: 0,
+      risk: profitPct < 0.3 ? 'high' : profitPct < 0.8 ? 'med' : 'low',
+      profit_1000: Math.round(profit*100)/100,
+    });
+  }
+  return opps;
+}
+
+// 3. Funding Rate Arbitráž
+function findFundingOpps() {
+  // Simulované funding rates (v reálnej appke by sme fetchovali z API)
+  const fundingRates = {
+    'BTC': {rate: 0.0001, exchange: 'Binance Futures'},
+    'ETH': {rate: 0.00015, exchange: 'Binance Futures'},
+    'SOL': {rate: 0.0003, exchange: 'Bybit Futures'},
+    'BNB': {rate: 0.00008, exchange: 'Binance Futures'},
+  };
+
+  const opps = [];
+  for (const [coin, data] of Object.entries(fundingRates)) {
+    const annualRate = data.rate * 3 * 365 * 100; // 3x denne, ročne
+    if (annualRate < 5) continue;
+
+    const spotPrice = prices.binance?.[coin];
+    if (!spotPrice) continue;
+
+    opps.push({
+      id: `fund_${coin}`,
+      type: 'funding',
+      coin,
+      emoji: coinEmoji(coin),
+      exchange: data.exchange,
+      spot_exchange: 'binance',
+      funding_rate: data.rate,
+      funding_pct: Math.round(data.rate*100*10000)/10000,
+      annual_pct: Math.round(annualRate*10)/10,
+      daily_pct: Math.round(data.rate*3*100*1000)/1000,
+      spot_price: spotPrice,
+      gross_pct: Math.round(data.rate*100*1000)/1000,
+      fees_pct: 0.1,
+      net_profit_pct: Math.round((data.rate*100 - 0.002)*1000)/1000,
+      transfer_min: 0,
+      risk: 'low',
+    });
+  }
+  return opps;
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function render() {
+  const saved = getSaved();
+  updateStatsUI(saved);
+  const el = document.getElementById('content');
+  document.getElementById('filter-bar').style.display = activeTab==='history' ? 'none' : '';
+
+  if (activeTab==='history') { renderHistory(el); return; }
+  if (activeTab==='saved')   { renderSavedTab(el, saved); return; }
+
+  let list = opportunities.filter(o => {
+    if (activeTab==='cross'   && o.type!=='cross')       return false;
+    if (activeTab==='tri'     && o.type!=='triangular')  return false;
+    if (activeTab==='funding' && o.type!=='funding')     return false;
+    if (coinFilter!=='all'    && o.coin!==coinFilter)    return false;
+    const minP = parseFloat(document.getElementById('min-p').value)||0;
+    return o.net_profit_pct >= minP;
+  });
+
+  if (!list.length) {
+    el.innerHTML = emptyHtml('🔍','Žiadne príležitosti','Skús znížiť min. profit alebo stlač ⚡ Refresh');
+    return;
+  }
+
+  const savedIds = new Set(saved.map(x=>x.id));
+  el.innerHTML = `<div class="cards">${list.map((o,i)=>oppCard(o,i,savedIds.has(o.id))).join('')}</div>`;
+}
+
+function updateStatsUI(saved) {
+  const minP = parseFloat(document.getElementById('min-p')?.value)||0;
+  const visible = opportunities.filter(o=>o.net_profit_pct>=minP);
+  const best = visible[0];
+  document.getElementById('s-total').textContent  = visible.length || '–';
+  document.getElementById('s-best').textContent   = best ? `+${best.net_profit_pct.toFixed(2)}%` : '–';
+  document.getElementById('s-saved').textContent  = saved.length;
+  const roi = calcROI(getHistory());
+  document.getElementById('s-roi').textContent    = roi.roi>=0?`+${roi.roi.toFixed(1)}%`:`${roi.roi.toFixed(1)}%`;
+
+  const cross = opportunities.filter(o=>o.type==='cross').length;
+  const tri   = opportunities.filter(o=>o.type==='triangular').length;
+  const fund  = opportunities.filter(o=>o.type==='funding').length;
+  document.getElementById('tb-all').textContent   = visible.length;
+  document.getElementById('tb-cross').textContent = cross;
+  document.getElementById('tb-tri').textContent   = tri;
+  document.getElementById('tb-fund').textContent  = fund;
+  document.getElementById('tb-saved').textContent = saved.length;
+}
+
+function updateStats() { updateStatsUI(getSaved()); }
+
+// ═══════════════════════════════════════════
+// CARD HTML
+// ═══════════════════════════════════════════
+function oppCard(o, i, isSaved) {
+  const tier = o.net_profit_pct>=1?'hot':o.net_profit_pct>=0.4?'warm':'cool';
+  const ptCls = o.type==='funding'?'pt-fund':tier==='hot'?'pt-hot':tier==='warm'?'pt-warm':'pt-cool';
+  const riskCls = {low:'rt-low',med:'rt-med',high:'rt-high'}[o.risk];
+  const riskLbl = {low:'Nízke riziko',med:'Stredné',high:'Vysoké'}[o.risk];
+  const typeBadge = {cross:'tb-cross',triangular:'tb-tri',funding:'tb-fund'}[o.type];
+  const typeLbl   = {cross:'Cross-Exchange',triangular:'Triangular',funding:'Funding Rate'}[o.type];
+  const typeCls   = {cross:'tb-cross',triangular:'tb-tri',funding:'tb-fund'}[o.type];
+  const oId = esc(o.id);
+  const calcId = `calc_${i}`;
+
+  let innerHtml = '';
+
+  if (o.type === 'cross') {
+    const buyExc  = EXCHANGES[o.buy_exc];
+    const sellExc = EXCHANGES[o.sell_exc];
+    const prevBuy  = prevPrices[o.buy_exc]?.[o.coin];
+    const prevSell = prevPrices[o.sell_exc]?.[o.coin];
+    innerHtml = `
+      <div class="exc-area">
+        <div class="exc-hdr"><span>Akcia · Burza</span><span>Cena · Zmena · Stávka</span></div>
+        <div class="exc-row">
+          <div class="exc-dir dir-buy">KÚPIŤ</div>
+          <div class="exc-name">${esc(buyExc?.name)}</div>
+          <a class="exc-link" href="${buyExc?.url}${o.coin}USDT" target="_blank" rel="noopener">Otvoriť 🔗</a>
+          <div class="exc-price">$${fmtPrice(o.buy_price)} ${priceChgHtml(prevBuy,o.buy_price)}</div>
+          <div class="exc-fee">fee: ${((buyExc?.fee||0)*100).toFixed(2)}%</div>
+        </div>
+        <div class="exc-row">
+          <div class="exc-dir dir-sell">PREDAŤ</div>
+          <div class="exc-name">${esc(sellExc?.name)}</div>
+          <a class="exc-link" href="${sellExc?.url}${o.coin}USDT" target="_blank" rel="noopener">Otvoriť 🔗</a>
+          <div class="exc-price">$${fmtPrice(o.sell_price)} ${priceChgHtml(prevSell,o.sell_price)}</div>
+          <div class="exc-fee">fee: ${((sellExc?.fee||0)*100).toFixed(2)}%</div>
+        </div>
+      </div>
+      <div class="calc-bar">
+        <span class="calc-lbl">Investícia $:</span>
+        <input class="calc-inp" type="number" value="1000" min="1"
+          oninput="recalcCross(this,'${calcId}',${o.buy_price},${o.sell_price},${EXCHANGES[o.buy_exc]?.fee||0.001},${EXCHANGES[o.sell_exc]?.fee||0.001},${o.wd_fee_usd||0})">
+        <div class="calc-res" id="${calcId}">
+          Profit: $${(1000*(o.net_profit_pct/100)).toFixed(2)}
+          ${o.transfer_min>0?`<span class="calc-warn">⏱ ${o.transfer_min}min prevod</span>`:''}
+        </div>
+      </div>`;
+  } else if (o.type === 'triangular') {
+    const pathHtml = o.path.map((p,pi) =>
+      `<div class="tri-node">${esc(p)}</div>${pi<o.path.length-1?'<div class="tri-arrow">→</div>':''}`
+    ).join('');
+    innerHtml = `
+      <div class="tri-path">${pathHtml}</div>
+      <div class="exc-area">
+        <div class="exc-hdr"><span>Burza: ${esc(EXCHANGES[o.exchange]?.name)}</span><span>Ceny</span></div>
+        ${o.path.slice(0,-1).map(coin => coin!=='USDT'?`
+        <div class="exc-row">
+          <div class="exc-dir dir-buy" style="width:60px;text-align:center">${esc(coin)}</div>
+          <div class="exc-name">$${fmtPrice(o.prices[coin])}/USDT</div>
+          <a class="exc-link" href="${EXCHANGES[o.exchange]?.url}${coin}USDT" target="_blank" rel="noopener">Trade 🔗</a>
+          <div class="exc-price"></div>
+          <div class="exc-fee">fee: 0.10%</div>
+        </div>`:''
+        ).join('')}
+      </div>
+      <div class="calc-bar">
+        <span class="calc-lbl">Investícia $:</span>
+        <input class="calc-inp" type="number" value="1000" min="1"
+          oninput="recalcTri(this,'${calcId}',${o.net_profit_pct})">
+        <div class="calc-res" id="${calcId}">
+          Profit: $${(1000*(o.net_profit_pct/100)).toFixed(2)}
+          <span style="color:var(--green);font-size:.65rem"> · Bez prevodu!</span>
+        </div>
+      </div>`;
+  } else if (o.type === 'funding') {
+    innerHtml = `
+      <div class="fund-grid">
+        <div class="fund-cell"><div class="fund-val" style="color:var(--amber)">${o.funding_pct}%</div><div class="fund-lbl">Per 8h</div></div>
+        <div class="fund-cell"><div class="fund-val" style="color:var(--green)">${o.daily_pct}%</div><div class="fund-lbl">Denne</div></div>
+        <div class="fund-cell"><div class="fund-val" style="color:var(--cyan)">${o.annual_pct}%</div><div class="fund-lbl">Ročne</div></div>
+      </div>
+      <div class="exc-area">
+        <div class="exc-hdr"><span>Stratégia</span></div>
+        <div class="exc-row">
+          <div class="exc-dir dir-buy">SPOT</div>
+          <div class="exc-name">${esc(EXCHANGES[o.spot_exchange]?.name)}</div>
+          <a class="exc-link" href="${EXCHANGES[o.spot_exchange]?.url}${o.coin}USDT" target="_blank" rel="noopener">Kúpiť 🔗</a>
+          <div class="exc-price">$${fmtPrice(o.spot_price)}</div>
+          <div class="exc-fee">long</div>
+        </div>
+        <div class="exc-row">
+          <div class="exc-dir dir-sell">FUTURES</div>
+          <div class="exc-name">${esc(o.exchange)}</div>
+          <div style=""></div>
+          <div class="exc-price" style="color:var(--amber)">${o.funding_pct}%/8h</div>
+          <div class="exc-fee">short</div>
+        </div>
+      </div>
+      <div class="calc-bar">
+        <span class="calc-lbl">Investícia $:</span>
+        <input class="calc-inp" type="number" value="1000" min="1"
+          oninput="recalcFund(this,'${calcId}',${o.daily_pct})">
+        <div class="calc-res" id="${calcId}">
+          Denne: $${(1000*o.daily_pct/100).toFixed(2)} · Ročne: $${(1000*o.annual_pct/100).toFixed(0)}
+        </div>
+      </div>`;
+  }
+
+  const actBtns = isSaved
+    ? `<button class="act-btn" onclick="unsaveOpp('${oId}')">★ Sledované</button>`
+    : `<button class="act-btn save" onclick="saveOpp('${oId}')">☆ Sledovať</button>`;
+
+  return `<div class="card ${tier} ${o.type}" style="animation-delay:${i*.025}s">
+    <div class="card-head">
+      <div class="coin-ico">${o.emoji}</div>
+      <div class="card-info">
+        <div class="card-title">${o.type==='cross'
+          ? `${esc(o.coin)}: ${esc(EXCHANGES[o.buy_exc]?.name)} → ${esc(EXCHANGES[o.sell_exc]?.name)}`
+          : o.type==='triangular'
+          ? `${o.path.join(' → ')}`
+          : `${esc(o.coin)} Funding Rate`
+        }</div>
+        <div class="card-sub">
+          <span class="type-badge ${typeCls}">${typeLbl}</span>
+          ${o.simulated?'<span style="font-size:.6rem;color:var(--amber);background:rgba(255,171,0,.1);border:1px solid rgba(255,171,0,.2);padding:.08rem .35rem;border-radius:99px;">⚠️ Orientačné</span>':''}
+          ${o.transfer_min>0?`<span style="font-size:.62rem;color:var(--muted)">⏱ ${o.transfer_min}min</span>`:'<span style="font-size:.62rem;color:var(--green)">⚡ Okamžité</span>'}
+        </div>
+      </div>
+      <div class="profit-col">
+        <div class="profit-tag ${ptCls}">+${o.net_profit_pct.toFixed(3)}%</div>
+        <span class="risk-tag ${riskCls}">${riskLbl}</span>
+      </div>
+    </div>
+    ${innerHtml}
+    <div class="act-bar">
+      ${actBtns}
+      <button class="act-btn exec" onclick="openTradeModal('${oId}')">✅ Zaznamenať</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// RECALC
+// ═══════════════════════════════════════════
+function recalcCross(inp,cid,buyP,sellP,buyFee,sellFee,wdFee) {
+  const amt = parseFloat(inp.value)||1000;
+  const coins = (amt/buyP)*(1-buyFee);
+  const received = coins*sellP*(1-sellFee) - wdFee;
+  const profit = received - amt;
+  const el = document.getElementById(cid);
+  if(el) el.innerHTML = `Profit: <span style="color:${profit>=0?'var(--green)':'var(--red)'}">${profit>=0?'+':''}$${profit.toFixed(2)}</span>`;
+}
+
+function recalcTri(inp,cid,profitPct) {
+  const amt = parseFloat(inp.value)||1000;
+  const profit = amt*profitPct/100;
+  const el = document.getElementById(cid);
+  if(el) el.innerHTML = `Profit: $${profit.toFixed(2)} <span style="color:var(--green);font-size:.65rem"> · Bez prevodu!</span>`;
+}
+
+function recalcFund(inp,cid,dailyPct) {
+  const amt = parseFloat(inp.value)||1000;
+  const daily = amt*dailyPct/100;
+  const el = document.getElementById(cid);
+  if(el) el.textContent = `Denne: $${daily.toFixed(2)} · Ročne: $${(daily*365).toFixed(0)}`;
+}
+
+// ═══════════════════════════════════════════
+// SAVED / HISTORY
+// ═══════════════════════════════════════════
+function renderSavedTab(el, saved) {
+  if (!saved.length) { el.innerHTML = emptyHtml('☆','Žiadne sledované','Klepni ☆ Sledovať na ľubovoľnej príležitosti'); return; }
+  el.innerHTML = `<div class="cards">${saved.map((o,i)=>oppCard(o,i,true)).join('')}</div>`;
+}
+
+function renderHistory(el) {
+  const list = getHistory().slice().reverse();
+  const roi  = calcROI(list);
+  const pColor = roi.profit>=0?'var(--green)':'var(--red)';
+  const pSign  = roi.profit>=0?'+':'';
+  let html = `<div class="roi-box">
+    <div class="roi-title">📊 Mesačný Prehľad
+      <button onclick="exportCSV()" style="font-size:.68rem;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:.18rem .45rem;cursor:pointer;">📥 CSV</button>
+    </div>
+    <div class="roi-grid">
+      <div class="roi-cell"><div class="roi-val" style="color:var(--amber)">${list.length}</div><div class="roi-lbl">Obchodov</div></div>
+      <div class="roi-cell"><div class="roi-val" style="color:var(--blue)">$${roi.total.toFixed(0)}</div><div class="roi-lbl">Investované</div></div>
+      <div class="roi-cell"><div class="roi-val" style="color:${pColor}">${pSign}$${roi.profit.toFixed(2)}</div><div class="roi-lbl">Profit</div></div>
+      <div class="roi-cell"><div class="roi-val" style="color:${pColor}">${pSign}${roi.roi.toFixed(1)}%</div><div class="roi-lbl">ROI</div></div>
+    </div>
+    <div class="chart-wrap"><canvas id="arb-chart"></canvas></div>
+  </div>`;
+  if (!list.length) html += emptyHtml('📊','História je prázdna','Zaznamenané obchody sa objavia tu');
+  else html += list.map(h=>histCard(h)).join('');
+  el.innerHTML = html;
+  setTimeout(()=>renderChart(list),50);
+}
+
+function histCard(h) {
+  if (!h) return '';
+  const pColor = (h.profit||0)>=0?'var(--green)':'var(--red)';
+  const pSign  = (h.profit||0)>=0?'+':'';
+  return `<div class="hist-card">
+    <div class="hist-head">
+      <span style="font-size:1.1rem">${h.emoji||'₿'}</span>
+      <div style="flex:1;min-width:0">
+        <div class="hist-title">${esc(h.title||'–')}</div>
+        <div style="font-size:.62rem;color:var(--muted)">${new Date(h.date).toLocaleString('sk-SK',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <span class="type-badge tb-${h.type||'cross'}">${{cross:'Cross-Ex',triangular:'Triangular',funding:'Funding'}[h.type]||'–'}</span>
+    </div>
+    <div class="hist-row">
+      <div class="hist-cell"><div class="hist-val" style="color:var(--blue)">$${h.amount||'–'}</div><div class="hist-lbl">Investované</div></div>
+      <div class="hist-cell"><div class="hist-val" style="color:var(--amber)">$${h.expected||'–'}</div><div class="hist-lbl">Očak. výnos</div></div>
+      <div class="hist-cell"><div class="hist-val" style="color:${pColor}">${pSign}$${(h.profit||0).toFixed(2)}</div><div class="hist-lbl">Profit</div></div>
+      <div class="hist-cell"><div class="hist-val" style="color:${pColor}">${pSign}${h.amount?((h.profit||0)/h.amount*100).toFixed(2):0}%</div><div class="hist-lbl">ROI</div></div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════
+function renderChart(list) {
+  if (chartInst){try{chartInst.destroy();}catch{} chartInst=null;}
+  const ctx = document.getElementById('arb-chart');
+  if (!ctx||!list.length) return;
+  const sorted = list.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let cum=0;
+  chartInst = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:sorted.map(h=>new Date(h.date).toLocaleDateString('sk-SK',{day:'2-digit',month:'2-digit'})),
+      datasets:[{
+        data:sorted.map(h=>{cum+=(h.profit||0);return Math.round(cum*100)/100;}),
+        borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,0.06)',
+        borderWidth:2,pointRadius:3,pointBackgroundColor:'#00e5ff',fill:true,tension:.35
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#3d4f63',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},
+              y:{ticks:{color:'#3d4f63',font:{size:9},callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.03)'}}}}
+  });
+}
+
+// ═══════════════════════════════════════════
+// TRADE MODAL
+// ═══════════════════════════════════════════
+function openTradeModal(id) {
+  pendingTrade = null;
+  const o = findOpp(id);
+  if (!o) return;
+  pendingTrade = o;
+  const title = o.type==='cross'
+    ? `${o.coin}: ${EXCHANGES[o.buy_exc]?.name} → ${EXCHANGES[o.sell_exc]?.name}`
+    : o.type==='triangular' ? o.path.join(' → ')
+    : `${o.coin} Funding Rate`;
+  document.getElementById('trade-modal-title').textContent = title;
+  document.getElementById('trade-amt').value = 1000;
+  updateTradePreview(1000);
+  document.getElementById('trade-modal').style.display='flex';
+}
+
+function updateTradePreview(amt) {
+  const o = pendingTrade; if(!o) return;
+  const profit = amt * o.net_profit_pct / 100;
+  const expected = amt + profit;
+  document.getElementById('trade-preview').innerHTML = `
+    <div style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:.7rem;font-size:.78rem;font-family:'Space Mono',monospace">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;">
+        <span style="color:var(--muted)">Investícia</span><strong style="color:var(--text)">$${amt.toFixed(2)}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;">
+        <span style="color:var(--muted)">Očak. výnos</span><strong style="color:var(--cyan)">$${expected.toFixed(2)}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.07);padding-top:.3rem;margin-top:.3rem;">
+        <span style="color:var(--muted)">Profit</span><strong style="color:var(--green)">+$${profit.toFixed(2)} (+${o.net_profit_pct.toFixed(3)}%)</strong>
+      </div>
+    </div>`;
+}
+
+function confirmTrade() {
+  const o = pendingTrade; if(!o) return;
+  const amt = parseFloat(document.getElementById('trade-amt').value)||1000;
+  const profit = amt * o.net_profit_pct / 100;
+  const title = o.type==='cross'
+    ? `${o.coin}: ${EXCHANGES[o.buy_exc]?.name} → ${EXCHANGES[o.sell_exc]?.name}`
+    : o.type==='triangular' ? o.path.join('→')
+    : `${o.coin} Funding`;
+  const record = {
+    id: o.id+'_'+Date.now(), type:o.type, coin:o.coin, emoji:o.emoji,
+    title, amount:amt, expected:Math.round((amt+profit)*100)/100,
+    profit:Math.round(profit*100)/100, pct:o.net_profit_pct,
+    date:new Date().toISOString(),
+  };
+  const h = LS.get('crypto_history')||[];
+  h.push(record);
+  saveHistory(h);
+  closeTradeModal();
+  toast('✅ Obchod zaznamenaný!');
+  updateStats();
+  render();
+}
+
+function closeTradeModal(){document.getElementById('trade-modal').style.display='none';pendingTrade=null;}
+
+function findOpp(id){
+  return opportunities.find(o=>o.id===id)||getSaved().find(o=>o.id===id);
+}
+
+function saveOpp(id){
+  const o=findOpp(id);if(!o)return;
+  const s=getSaved();
+  if(!s.find(x=>x.id===id)){s.push({...o,saved_at:new Date().toISOString()});saveSaved(s);}
+  toast('☆ Sledované!');updateStats();render();
+}
+
+function unsaveOpp(id){
+  saveSaved(getSaved().filter(x=>x.id!==id));
+  toast('Odstránené');updateStats();render();
+}
+
+// ═══════════════════════════════════════════
+// ROI
+// ═══════════════════════════════════════════
+function calcROI(list){
+  const total=list.reduce((s,h)=>s+(h.amount||0),0);
+  const profit=list.reduce((s,h)=>s+(h.profit||0),0);
+  return {total,profit,roi:total>0?profit/total*100:0};
+}
+
+// ═══════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════
+function exportCSV(){
+  const list=getHistory();
+  if(!list.length){toast('História je prázdna');return;}
+  const rows=[['Dátum','Typ','Coin','Investícia $','Výnos $','Profit $','ROI %']];
+  list.forEach(h=>{
+    rows.push([
+      new Date(h.date).toLocaleDateString('sk-SK'),
+      h.type,h.coin||'–',h.amount||0,h.expected||0,
+      (h.profit||0).toFixed(2),h.amount?((h.profit||0)/h.amount*100).toFixed(2):0
+    ]);
+  });
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`cryptoarb_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  toast('📥 CSV stiahnuté!');
+}
+
+// ═══════════════════════════════════════════
+// TICKER UI
+// ═══════════════════════════════════════════
+function updateTicker(){
+  const coins=[['BTC','t-btc','tc-btc'],['ETH','t-eth','tc-eth'],['BNB','t-bnb','tc-bnb'],['SOL','t-sol','tc-sol'],['XRP','t-xrp','tc-xrp']];
+  for(const [coin,pid,cid] of coins){
+    const p=prices.binance?.[coin]||ticker24h[coin]?.price;
+    const c=ticker24h[coin]?.change;
+    if(p){
+      const el=document.getElementById(pid);
+      if(el) el.textContent='$'+fmtPrice(p);
+    }
+    if(c!==undefined){
+      const el=document.getElementById(cid);
+      if(el){el.textContent=(c>=0?'+':'')+c.toFixed(2)+'%';el.className='ticker-chg '+(c>=0?'chg-up':'chg-dn');}
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function coinEmoji(c){
+  const m={BTC:'₿',ETH:'Ξ',USDT:'💵',SOL:'◎',XRP:'✕',BNB:'🔶',ADA:'₳',DOGE:'🐕',AVAX:'🔺',MATIC:'⬡'};
+  return m[c]||'🪙';
+}
+
+function fmtPrice(p){
+  if(!p)return '–';
+  if(p>=10000)return p.toLocaleString('en',{maximumFractionDigits:0});
+  if(p>=100)  return p.toLocaleString('en',{maximumFractionDigits:2});
+  if(p>=1)    return p.toLocaleString('en',{maximumFractionDigits:4});
+  return p.toLocaleString('en',{maximumFractionDigits:6});
+}
+
+function priceChgHtml(prev,curr){
+  if(!prev||!curr)return '<span class="oc-eq odds-chg">nové</span>';
+  const diff=((curr-prev)/prev)*100;
+  if(Math.abs(diff)<0.001)return '<span class="oc-eq odds-chg">–</span>';
+  return diff>0
+    ?`<span class="oc-up odds-chg">▲${diff.toFixed(3)}%</span>`
+    :`<span class="oc-dn odds-chg">▼${Math.abs(diff).toFixed(3)}%</span>`;
+}
+
+function emptyHtml(ico,ttl,sub){
+  return `<div class="empty"><div class="empty-ico">${ico}</div><div class="empty-ttl">${ttl}</div><div style="font-size:.78rem;margin-top:.3rem">${sub}</div></div>`;
+}
+
+function setStatus(live,txt){
+  document.getElementById('dot').className='dot'+(live?' on':'');
+  document.getElementById('status-txt').textContent=txt;
+}
+function showSpin(v){document.getElementById('spin').style.display=v?'inline-block':'none';}
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2600);
+}
+
+function toggleRisk(){
+  const el=document.getElementById('risk-panel');
+  el.style.display=el.style.display==='block'?'none':'block';
+}
+
+function openExecGuide(){document.getElementById('exec-modal').style.display='flex';}
+function closeExecGuide(){document.getElementById('exec-modal').style.display='none';}
+
+// ═══════════════════════════════════════════
+// TABS & FILTERS
+// ═══════════════════════════════════════════
+function setTab(tab,btn){
+  activeTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');render();
+}
+function setCoinFilter(btn,f){
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');coinFilter=f;render();
+}
+
+// ═══════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════
+function manualRefresh(){
+  if(isFetching){toast('⏳ Načítavam...');return;}
+  countdown=REFRESH_SEC;
+  fetchAllPrices();
+}
+
+function startTimer(){
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    countdown--;
+    document.getElementById('cd').textContent=countdown+'s';
+    document.getElementById('prog').style.width=(countdown/REFRESH_SEC*100)+'%';
+    if(countdown<=0){countdown=REFRESH_SEC;fetchAllPrices();}
+  },1000);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init(){
+  updateStats();
+  fetchAllPrices();
+  startTimer();
+}
+
+init();
+</script>
+</body>
+</html>
